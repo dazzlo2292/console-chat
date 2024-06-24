@@ -37,9 +37,8 @@ public class Server {
     }
 
     public synchronized void broadcastMessages(String message){
-        for (Map.Entry<String, ClientHandler> client : clients.entrySet()) {
-            ClientHandler currentClient = client.getValue();
-            currentClient.send(message);
+        for (ClientHandler client : clients.values()) {
+            client.send(message);
         }
     }
 
