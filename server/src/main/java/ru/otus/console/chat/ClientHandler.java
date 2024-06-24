@@ -4,6 +4,7 @@ import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.net.Socket;
+import java.util.Arrays;
 
 public class ClientHandler {
     private final Server server;
@@ -31,15 +32,31 @@ public class ClientHandler {
                 System.out.println("Client connected");
                 while (true) {
                     String input = read();
+                    boolean breakLoop = false;
                     if (input.startsWith("/")) {
-                        if (input.equals("/exit")) {
-                            send("/exit_ok");
+                        String[] parts = input.split(" ");
+                        switch (parts[0]) {
+                            case "/exit":
+                                send("/exit_ok");
+                                breakLoop = true;
+                                break;
+                            case "/w":
+                                String dstName = parts[1];
+                                String message = "[" + userName + " -> " + dstName + "]: " +
+                                        String.join(" ", Arrays.copyOfRange(parts, 2, parts.length));
+                                System.out.println(message);
+                                server.sendWhisperMessage(this, dstName, message);
+                                break;
+                            default:
+                                this.send("Command not found");
+                        }
+                        if (breakLoop) {
                             break;
                         }
                     } else {
                         String message = userName + ": " + input;
                         System.out.println(message);
-                        server.broadcast(message);
+                        server.broadcastMessages(message);
                     }
                 }
             } catch (IOException e) {

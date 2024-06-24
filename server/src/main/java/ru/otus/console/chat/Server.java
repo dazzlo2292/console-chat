@@ -27,19 +27,34 @@ public class Server {
         }
     }
 
-    public synchronized void broadcast(String message){
+    public synchronized void sendWhisperMessage(ClientHandler srcClient, String dstName, String message) {
+        boolean isFound = false;
+        for (ClientHandler client : clients) {
+            if (client.getUserName().equals(dstName)) {
+                isFound = true;
+                client.send(message);
+            }
+        }
+        if (isFound) {
+            srcClient.send(message);
+        } else {
+            srcClient.send("userName not found!");
+        }
+    }
+
+    public synchronized void broadcastMessages(String message){
         for (ClientHandler client : clients) {
             client.send(message);
         }
     }
 
     private synchronized void subscribe(ClientHandler client) {
-        broadcast(client.getUserName() + " joined to the chat");
+        broadcastMessages(client.getUserName() + " joined to the chat");
         clients.add(client);
     }
 
     public synchronized void unsubscribe(ClientHandler client) {
         clients.remove(client);
-        broadcast(client.getUserName() + " left the chat");
+        broadcastMessages(client.getUserName() + " left the chat");
     }
 }
