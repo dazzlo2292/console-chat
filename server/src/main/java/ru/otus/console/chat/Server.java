@@ -3,16 +3,16 @@ package ru.otus.console.chat;
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.HashMap;
+import java.util.Map;
 
 public class Server {
     private final int port;
-    private final List<ClientHandler> clients;
+    private final Map<String, ClientHandler> clients;
 
-    public Server(int port) throws IOException {
+    public Server(int port) {
         this.port = port;
-        this.clients = new ArrayList<>();
+        this.clients = new HashMap<>();
     }
 
     public void start() {
@@ -28,29 +28,24 @@ public class Server {
     }
 
     public synchronized void sendWhisperMessage(ClientHandler srcClient, String dstName, String message) {
-        boolean isFound = false;
-        for (ClientHandler client : clients) {
-            if (client.getUserName().equals(dstName)) {
-                isFound = true;
-                client.send(message);
-            }
-        }
-        if (isFound) {
+        if (clients.containsKey(dstName)) {
+            clients.get(dstName).send(message);
             srcClient.send(message);
-        } else {
-            srcClient.send("userName not found!");
+            return;
         }
+        srcClient.send("userName not found!");
     }
 
     public synchronized void broadcastMessages(String message){
-        for (ClientHandler client : clients) {
-            client.send(message);
+        for (Map.Entry<String, ClientHandler> client : clients.entrySet()) {
+            ClientHandler currentClient = client.getValue();
+            currentClient.send(message);
         }
     }
 
     private synchronized void subscribe(ClientHandler client) {
         broadcastMessages(client.getUserName() + " joined to the chat");
-        clients.add(client);
+        clients.put(client.getUserName(), client);
     }
 
     public synchronized void unsubscribe(ClientHandler client) {

@@ -4,7 +4,6 @@ import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.net.Socket;
-import java.util.Arrays;
 
 public class ClientHandler {
     private final Server server;
@@ -34,7 +33,7 @@ public class ClientHandler {
                     String input = read();
                     boolean breakLoop = false;
                     if (input.startsWith("/")) {
-                        String[] parts = input.split(" ");
+                        String[] parts = input.split(" ", 3);
                         switch (parts[0]) {
                             case "/exit":
                                 send("/exit_ok");
@@ -42,8 +41,7 @@ public class ClientHandler {
                                 break;
                             case "/w":
                                 String dstName = parts[1];
-                                String message = "[" + userName + " -> " + dstName + "]: " +
-                                        String.join(" ", Arrays.copyOfRange(parts, 2, parts.length));
+                                String message = "[" + userName + " -> " + dstName + "]: " + parts[2];
                                 System.out.println(message);
                                 server.sendWhisperMessage(this, dstName, message);
                                 break;
