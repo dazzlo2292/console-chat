@@ -55,14 +55,11 @@ public class Server {
     }
 
     public synchronized void unsubscribe(ClientHandler client) {
-        clients.remove(client);
+        clients.remove(client.getUserName());
         broadcastMessages(client.getUserName() + " left the chat");
     }
 
     public boolean isUserNameBusy(String userName) {
-        if (clients.containsKey(userName)) {
-            return true;
-        }
-        return false;
+        return clients.containsKey(userName);
     }
 }

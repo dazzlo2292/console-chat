@@ -16,7 +16,7 @@ public class InMemoryAuthenticationProvider implements AuthenticationProvider {
         }
     }
 
-    private Server server;
+    private final Server server;
     private final List<User> users;
 
     public InMemoryAuthenticationProvider(Server server) {
@@ -79,11 +79,12 @@ public class InMemoryAuthenticationProvider implements AuthenticationProvider {
     @Override
     public boolean registration(ClientHandler clientHandler, String login, String password, String userName) {
         if (login.trim().length() < 3 || password.trim().length() < 6 || userName.isEmpty()) {
-            clientHandler.send("ERROR — Incorrect data\n" +
-                    "Requirements:\n" +
-                    "Login — 3+ symbols\n" +
-                    "Password — 6+ symbols\n" +
-                    "UserName — 1+ symbols");
+            clientHandler.send("""
+                    ERROR — Incorrect data
+                    Requirements:
+                    Login — 3+ symbols
+                    Password — 6+ symbols
+                    UserName — 1+ symbols""");
             return false;
         }
         if (isLoginExists(login)) {
