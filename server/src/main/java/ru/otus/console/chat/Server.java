@@ -9,18 +9,25 @@ import java.util.Map;
 public class Server {
     private final int port;
     private final Map<String, ClientHandler> clients;
+    private final AuthenticationProvider authenticationProvider;
 
     public Server(int port) {
         this.port = port;
         this.clients = new HashMap<>();
+        this.authenticationProvider = new InMemoryAuthenticationProvider(this);
+    }
+
+    public AuthenticationProvider getAuthenticationProvider() {
+        return authenticationProvider;
     }
 
     public void start() {
         try (ServerSocket socket = new ServerSocket(this.port)) {
             System.out.println("Server started on port " + port);
+            authenticationProvider.initialize();
             while (true) {
                 Socket connection = socket.accept();
-                subscribe(new ClientHandler(this,connection));
+                new ClientHandler(this,connection);
             }
         } catch (IOException e) {
             e.printStackTrace();
@@ -33,7 +40,7 @@ public class Server {
             srcClient.send(message);
             return;
         }
-        srcClient.send("userName not found!");
+        srcClient.send("ERROR — userName not found!");
     }
 
     public synchronized void broadcastMessages(String message){
@@ -42,7 +49,7 @@ public class Server {
         }
     }
 
-    private synchronized void subscribe(ClientHandler client) {
+    public synchronized void subscribe(ClientHandler client) {
         broadcastMessages(client.getUserName() + " joined to the chat");
         clients.put(client.getUserName(), client);
     }
@@ -50,5 +57,12 @@ public class Server {
     public synchronized void unsubscribe(ClientHandler client) {
         clients.remove(client);
         broadcastMessages(client.getUserName() + " left the chat");
+    }
+
+    public boolean isUserNameBusy(String userName) {
+        if (clients.containsKey(userName)) {
+            return true;
+        }
+        return false;
     }
 }

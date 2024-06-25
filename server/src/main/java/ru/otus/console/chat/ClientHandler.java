@@ -10,12 +10,16 @@ public class ClientHandler {
     private final Socket socket;
     private final DataInputStream in;
     private final DataOutputStream out;
-    private final String userName;
+    private String userName;
 
-    private static int userNumber = 1;
+    private final static String SEPARATOR = "--------------------------------------------------------";
 
     public String getUserName() {
         return userName;
+    }
+
+    public void setUserName(String userName) {
+        this.userName = userName;
     }
 
     public ClientHandler(Server server, Socket socket) throws IOException {
@@ -23,12 +27,41 @@ public class ClientHandler {
         this.socket = socket;
         this.in = new DataInputStream(this.socket.getInputStream());
         this.out = new DataOutputStream(this.socket.getOutputStream());
-        this.userName = "user-" + userNumber;
-        userNumber++;
 
         new Thread(() -> {
             try {
                 System.out.println("Client connected");
+                while (true) {
+                    send(SEPARATOR + "\nLog in or registration account\n" +
+                            "Auth format         — /auth {login} {password}\n" +
+                            "Registration format — /reg {login} {password} {userName}\n" + SEPARATOR);
+                    String input = read();
+                    if (input.equals("/exit")) {
+                        send("/exit_ok");
+                        return;
+                    }
+                    if (input.startsWith("/auth ")) {
+                        String[] parts = input.split(" ");
+                        if (parts.length != 3) {
+                            send("ERROR — Incorrect command format");
+                            continue;
+                        }
+                        if (server.getAuthenticationProvider().authentication(this, parts[1], parts[2])) {
+                            break;
+                        }
+                        continue;
+                    }
+                    if (input.startsWith("/reg ")) {
+                        String[] parts = input.split(" ");
+                        if (parts.length != 4) {
+                            send("ERROR — Incorrect command format");
+                            continue;
+                        }
+                        if (server.getAuthenticationProvider().registration(this, parts[1], parts[2], parts[3])) {
+                            break;
+                        }
+                    }
+                }
                 while (true) {
                     String input = read();
                     boolean breakLoop = false;
@@ -46,7 +79,7 @@ public class ClientHandler {
                                 server.sendWhisperMessage(this, dstName, message);
                                 break;
                             default:
-                                this.send("Command not found");
+                                this.send("ERROR — Command not found");
                         }
                         if (breakLoop) {
                             break;

@@ -27,6 +27,14 @@ public class Client {
                     if (input.equals("/exit_ok")) {
                         break;
                     }
+                    if (input.startsWith("/auth_ok ")) {
+                        System.out.println("Authentication completed. UserName: " + input.split(" ")[1]);
+                        continue;
+                    }
+                    if (input.startsWith("/reg_ok ")) {
+                        System.out.println("Registration completed. UserName: " + input.split(" ")[1]);
+                        continue;
+                    }
                     System.out.println(input);
                 }
             } catch (IOException e) {
