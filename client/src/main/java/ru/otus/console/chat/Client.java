@@ -11,12 +11,14 @@ public class Client {
     private final  DataInputStream in;
     private final  DataOutputStream out;
     private final Scanner scanner;
+    private boolean active;
 
     public Client() throws IOException {
         this.socket = new Socket("localhost", 8089);
         this.in = new DataInputStream(socket.getInputStream());
         this.out = new DataOutputStream(socket.getOutputStream());
         this.scanner = new Scanner(System.in);
+        this.active = true;
 
         System.out.println("Connected to server");
 
@@ -35,6 +37,12 @@ public class Client {
                         System.out.println("Registration completed. UserName: " + input.split(" ")[1]);
                         continue;
                     }
+                    if (input.equals("/disconnect")) {
+                        System.out.println("Admin kick you of chat");
+                        out.writeUTF("/disconnect");
+                        active = false;
+                        break;
+                    }
                     System.out.println(input);
                 }
             } catch (IOException e) {
@@ -44,7 +52,7 @@ public class Client {
             }
         }).start();
 
-        while (true) {
+        while (active) {
             String message = scanner.nextLine();
             out.writeUTF(message);
             if (message.equals("/exit")) {

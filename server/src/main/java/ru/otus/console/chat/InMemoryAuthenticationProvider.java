@@ -1,30 +1,46 @@
 package ru.otus.console.chat;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.HashMap;
+import java.util.Map;
 
 public class InMemoryAuthenticationProvider implements AuthenticationProvider {
-    private class User {
+    public class User {
         private final String login;
         private final String password;
         private final String userName;
+        private UserRoles role;
 
         public User(String login, String password, String userName) {
             this.login = login;
             this.password = password;
             this.userName = userName;
+            this.role = UserRoles.USER;
+        }
+
+        public UserRoles getRole() {
+            return role;
+        }
+
+        public void setRole(UserRoles role) {
+            this.role = role;
         }
     }
 
     private final Server server;
-    private final List<User> users;
+    private final Map<String, User> users;
 
     public InMemoryAuthenticationProvider(Server server) {
         this.server = server;
-        this.users = new ArrayList<>();
-        users.add(new User("admin","admin", "admin"));
-        users.add(new User("user","user", "user"));
-        users.add(new User("test","qwerty123", "nick"));
+        this.users = new HashMap<>();
+        User admin = new User("admin","admin", "admin");
+        admin.setRole(UserRoles.ADMIN);
+        users.put(admin.userName, admin);
+        users.put("user", new User("user","user", "user"));
+    }
+
+    @Override
+    public Map<String, User> getUsers() {
+        return users;
     }
 
     @Override
@@ -33,7 +49,7 @@ public class InMemoryAuthenticationProvider implements AuthenticationProvider {
     }
 
     private String getUserNameByLoginAndPassword(String login, String password) {
-        for (User user : users) {
+        for (User user : users.values()) {
             if (user.login.equals(login) && user.password.equals(password)) {
                 return user.userName;
             }
@@ -42,7 +58,7 @@ public class InMemoryAuthenticationProvider implements AuthenticationProvider {
     }
 
     private boolean isLoginExists(String login) {
-        for (User user : users) {
+        for (User user : users.values()) {
             if (user.login.equals(login)) {
                 return true;
             }
@@ -51,7 +67,7 @@ public class InMemoryAuthenticationProvider implements AuthenticationProvider {
     }
 
     private boolean isUserNameExists(String userName) {
-        for (User user : users) {
+        for (User user : users.values()) {
             if (user.userName.equals(userName)) {
                 return true;
             }
@@ -95,7 +111,7 @@ public class InMemoryAuthenticationProvider implements AuthenticationProvider {
             clientHandler.send("ERROR — UserName already exists");
             return false;
         }
-        users.add(new User(login, password, userName));
+        users.put(userName,new User(login, password, userName));
         clientHandler.setUserName(userName);
         server.subscribe(clientHandler);
         clientHandler.send("/reg_ok " + userName);

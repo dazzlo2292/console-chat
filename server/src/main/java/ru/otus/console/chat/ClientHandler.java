@@ -72,11 +72,25 @@ public class ClientHandler {
                                 send("/exit_ok");
                                 breakLoop = true;
                                 break;
+                            case "/disconnect":
+                                breakLoop = true;
+                                break;
                             case "/w":
                                 String dstName = parts[1];
                                 String message = "[" + userName + " -> " + dstName + "]: " + parts[2];
                                 System.out.println(message);
                                 server.sendWhisperMessage(this, dstName, message);
+                                break;
+                            case "/kick":
+                                if (server.isAdmin(userName)) {
+                                    if (parts.length != 2) {
+                                        this.send("ERROR — Incorrect command format");
+                                    }
+                                    String targetUserName = parts[1];
+                                    server.disconnectUser(this, targetUserName);
+                                } else {
+                                    this.send("ERROR — Permission denied");
+                                }
                                 break;
                             default:
                                 this.send("ERROR — Unknown command");

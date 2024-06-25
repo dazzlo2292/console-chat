@@ -59,7 +59,23 @@ public class Server {
         broadcastMessages(client.getUserName() + " left the chat");
     }
 
-    public boolean isUserNameBusy(String userName) {
+    public synchronized void disconnectUser(ClientHandler srcClient, String userName) {
+        if (clients.containsKey(userName)) {
+            clients.get(userName).send("/disconnect");
+            return;
+        }
+        srcClient.send("ERROR — userName not found!");
+    }
+
+    public synchronized boolean isUserNameBusy(String userName) {
         return clients.containsKey(userName);
+    }
+
+    public boolean isAdmin(String login) {
+        InMemoryAuthenticationProvider.User user = authenticationProvider.getUsers().get(login);
+        if (user == null) {
+            return false;
+        }
+        return user.getRole() == UserRoles.ADMIN;
     }
 }
