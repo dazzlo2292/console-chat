@@ -79,7 +79,7 @@ public class ClientHandler {
                                 server.sendWhisperMessage(this, dstName, message);
                                 break;
                             default:
-                                this.send("ERROR — Command not found");
+                                this.send("ERROR — Unknown command");
                         }
                         if (breakLoop) {
                             break;
