@@ -1,31 +1,12 @@
-package ru.otus.console.chat;
+package ru.otus.console.chat.auth;
+
+import ru.otus.console.chat.ClientHandler;
+import ru.otus.console.chat.Server;
 
 import java.util.HashMap;
 import java.util.Map;
 
 public class InMemoryAuthenticationProvider implements AuthenticationProvider {
-    public class User {
-        private final String login;
-        private final String password;
-        private final String userName;
-        private UserRoles role;
-
-        public User(String login, String password, String userName) {
-            this.login = login;
-            this.password = password;
-            this.userName = userName;
-            this.role = UserRoles.USER;
-        }
-
-        public UserRoles getRole() {
-            return role;
-        }
-
-        public void setRole(UserRoles role) {
-            this.role = role;
-        }
-    }
-
     private final Server server;
     private final Map<String, User> users;
 
@@ -34,7 +15,7 @@ public class InMemoryAuthenticationProvider implements AuthenticationProvider {
         this.users = new HashMap<>();
         User admin = new User("admin","admin", "admin");
         admin.setRole(UserRoles.ADMIN);
-        users.put(admin.userName, admin);
+        users.put(admin.getUserName(), admin);
         users.put("user", new User("user","user", "user"));
     }
 
@@ -50,8 +31,8 @@ public class InMemoryAuthenticationProvider implements AuthenticationProvider {
 
     private String getUserNameByLoginAndPassword(String login, String password) {
         for (User user : users.values()) {
-            if (user.login.equals(login) && user.password.equals(password)) {
-                return user.userName;
+            if (user.getLogin().equals(login) && user.getPassword().equals(password)) {
+                return user.getUserName();
             }
         }
         return null;
@@ -59,7 +40,7 @@ public class InMemoryAuthenticationProvider implements AuthenticationProvider {
 
     private boolean isLoginExists(String login) {
         for (User user : users.values()) {
-            if (user.login.equals(login)) {
+            if (user.getLogin().equals(login)) {
                 return true;
             }
         }
@@ -68,7 +49,7 @@ public class InMemoryAuthenticationProvider implements AuthenticationProvider {
 
     private boolean isUserNameExists(String userName) {
         for (User user : users.values()) {
-            if (user.userName.equals(userName)) {
+            if (user.getUserName().equals(userName)) {
                 return true;
             }
         }
@@ -76,7 +57,7 @@ public class InMemoryAuthenticationProvider implements AuthenticationProvider {
     }
 
     @Override
-    public synchronized boolean authentication(ClientHandler clientHandler,String login, String password) {
+    public synchronized boolean authentication(ClientHandler clientHandler, String login, String password) {
         String authUserName = getUserNameByLoginAndPassword(login, password);
         if (authUserName == null) {
             clientHandler.send("ERROR — Incorrect login/password");
@@ -87,6 +68,7 @@ public class InMemoryAuthenticationProvider implements AuthenticationProvider {
             return false;
         }
         clientHandler.setUserName(authUserName);
+        clientHandler.setUserRole(users.get(authUserName).getRole());
         server.subscribe(clientHandler);
         clientHandler.send("/auth_ok " + authUserName);
         return true;
@@ -113,6 +95,7 @@ public class InMemoryAuthenticationProvider implements AuthenticationProvider {
         }
         users.put(userName,new User(login, password, userName));
         clientHandler.setUserName(userName);
+        clientHandler.setUserRole(users.get(userName).getRole());
         server.subscribe(clientHandler);
         clientHandler.send("/reg_ok " + userName);
         return true;

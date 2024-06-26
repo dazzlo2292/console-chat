@@ -1,4 +1,4 @@
-package ru.otus.console.chat;
+package ru.otus.console.chat.auth;
 
 public enum UserRoles {
     USER("Пользователь"),

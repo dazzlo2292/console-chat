@@ -1,5 +1,8 @@
 package ru.otus.console.chat;
 
+import ru.otus.console.chat.auth.AuthenticationProvider;
+import ru.otus.console.chat.auth.InMemoryAuthenticationProvider;
+
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
@@ -69,13 +72,5 @@ public class Server {
 
     public synchronized boolean isUserNameBusy(String userName) {
         return clients.containsKey(userName);
-    }
-
-    public boolean isAdmin(String login) {
-        InMemoryAuthenticationProvider.User user = authenticationProvider.getUsers().get(login);
-        if (user == null) {
-            return false;
-        }
-        return user.getRole() == UserRoles.ADMIN;
     }
 }
