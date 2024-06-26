@@ -1,5 +1,7 @@
 package ru.otus.console.chat;
 
+import ru.otus.console.chat.auth.UserRoles;
+
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
@@ -11,6 +13,7 @@ public class ClientHandler {
     private final DataInputStream in;
     private final DataOutputStream out;
     private String userName;
+    private UserRoles userRole;
 
     private final static String SEPARATOR = "--------------------------------------------------------";
 
@@ -20,6 +23,10 @@ public class ClientHandler {
 
     public void setUserName(String userName) {
         this.userName = userName;
+    }
+
+    public void setUserRole(UserRoles userRole) {
+        this.userRole = userRole;
     }
 
     public ClientHandler(Server server, Socket socket) throws IOException {
@@ -72,11 +79,26 @@ public class ClientHandler {
                                 send("/exit_ok");
                                 breakLoop = true;
                                 break;
+                            case "/disconnect":
+                                breakLoop = true;
+                                break;
                             case "/w":
                                 String dstName = parts[1];
                                 String message = "[" + userName + " -> " + dstName + "]: " + parts[2];
                                 System.out.println(message);
                                 server.sendWhisperMessage(this, dstName, message);
+                                break;
+                            case "/kick":
+                                if (userRole == UserRoles.ADMIN) {
+                                    if (parts.length != 2) {
+                                        this.send("ERROR — Incorrect command format");
+                                        break;
+                                    }
+                                    String targetUserName = parts[1];
+                                    server.disconnectUser(this, targetUserName);
+                                } else {
+                                    this.send("ERROR — Permission denied");
+                                }
                                 break;
                             default:
                                 this.send("ERROR — Unknown command");

@@ -1,5 +1,8 @@
 package ru.otus.console.chat;
 
+import ru.otus.console.chat.auth.AuthenticationProvider;
+import ru.otus.console.chat.auth.InMemoryAuthenticationProvider;
+
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
@@ -59,7 +62,15 @@ public class Server {
         broadcastMessages(client.getUserName() + " left the chat");
     }
 
-    public boolean isUserNameBusy(String userName) {
+    public synchronized void disconnectUser(ClientHandler srcClient, String userName) {
+        if (clients.containsKey(userName)) {
+            clients.get(userName).send("/disconnect");
+            return;
+        }
+        srcClient.send("ERROR — userName not found!");
+    }
+
+    public synchronized boolean isUserNameBusy(String userName) {
         return clients.containsKey(userName);
     }
 }
