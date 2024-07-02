@@ -14,7 +14,7 @@ public class InMemoryAuthenticationProvider implements AuthenticationProvider {
         this.server = server;
         this.users = new HashMap<>();
         User admin = new User("admin","admin", "admin");
-        admin.setRole(UserRoles.ADMIN);
+        admin.addRole(UserRoles.ADMIN);
         users.put(admin.getUserName(), admin);
         users.put("user", new User("user","user", "user"));
     }
@@ -68,7 +68,7 @@ public class InMemoryAuthenticationProvider implements AuthenticationProvider {
             return false;
         }
         clientHandler.setUserName(authUserName);
-        clientHandler.setUserRole(users.get(authUserName).getRole());
+        clientHandler.addUserRole(users.get(authUserName).getRoles());
         server.subscribe(clientHandler);
         clientHandler.send("/auth_ok " + authUserName);
         return true;
@@ -95,7 +95,7 @@ public class InMemoryAuthenticationProvider implements AuthenticationProvider {
         }
         users.put(userName,new User(login, password, userName));
         clientHandler.setUserName(userName);
-        clientHandler.setUserRole(users.get(userName).getRole());
+        clientHandler.addUserRole(users.get(userName).getRoles());
         server.subscribe(clientHandler);
         clientHandler.send("/reg_ok " + userName);
         return true;

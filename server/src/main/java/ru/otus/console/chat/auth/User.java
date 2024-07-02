@@ -1,24 +1,28 @@
 package ru.otus.console.chat.auth;
 
+import java.util.HashSet;
+import java.util.Set;
+
 public class User {
     private final String login;
     private final String password;
     private final String userName;
-    private UserRoles role;
+    private Set<UserRoles> roles;
 
     public User(String login, String password, String userName) {
         this.login = login;
         this.password = password;
         this.userName = userName;
-        this.role = UserRoles.USER;
+        this.roles = new HashSet<>();
+        roles.add(UserRoles.USER);
     }
 
-    public UserRoles getRole() {
-        return role;
+    public Set<UserRoles> getRoles() {
+        return roles;
     }
 
-    public void setRole(UserRoles role) {
-        this.role = role;
+    public void addRole(UserRoles role) {
+        this.roles.add(role);
     }
 
     public String getLogin() {

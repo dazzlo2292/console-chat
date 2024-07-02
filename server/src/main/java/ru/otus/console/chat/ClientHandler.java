@@ -6,6 +6,8 @@ import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.net.Socket;
+import java.util.HashSet;
+import java.util.Set;
 
 public class ClientHandler {
     private final Server server;
@@ -13,7 +15,7 @@ public class ClientHandler {
     private final DataInputStream in;
     private final DataOutputStream out;
     private String userName;
-    private UserRoles userRole;
+    private Set<UserRoles> userRoles;
 
     private final static String SEPARATOR = "--------------------------------------------------------";
 
@@ -25,8 +27,12 @@ public class ClientHandler {
         this.userName = userName;
     }
 
-    public void setUserRole(UserRoles userRole) {
-        this.userRole = userRole;
+    public void addUserRole(UserRoles userRole) {
+        this.userRoles.add(userRole);
+    }
+
+    public void addUserRole(Set<UserRoles> userRoles) {
+        this.userRoles.addAll(userRoles);
     }
 
     public ClientHandler(Server server, Socket socket) throws IOException {
@@ -34,6 +40,7 @@ public class ClientHandler {
         this.socket = socket;
         this.in = new DataInputStream(this.socket.getInputStream());
         this.out = new DataOutputStream(this.socket.getOutputStream());
+        this.userRoles = new HashSet<>();
 
         new Thread(() -> {
             try {
@@ -89,7 +96,7 @@ public class ClientHandler {
                                 server.sendWhisperMessage(this, dstName, message);
                                 break;
                             case "/kick":
-                                if (userRole == UserRoles.ADMIN) {
+                                if (userRoles.contains(UserRoles.ADMIN)) {
                                     if (parts.length != 2) {
                                         this.send("ERROR — Incorrect command format");
                                         break;
