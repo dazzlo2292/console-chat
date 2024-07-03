@@ -1,30 +1,48 @@
 package ru.otus.console.chat;
 
 import ru.otus.console.chat.auth.AuthenticationProvider;
-import ru.otus.console.chat.auth.InMemoryAuthenticationProvider;
+import ru.otus.console.chat.auth.DatabaseAuthenticationProvider;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.sql.SQLException;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Properties;
 
 public class Server {
     private final int port;
     private final Map<String, ClientHandler> clients;
     private final AuthenticationProvider authenticationProvider;
+    private Properties properties;
 
-    public Server(int port) {
+    private static final String CONFIG_PATH = "config.properties";
+
+    public Server(int port) throws SQLException, IOException {
         this.port = port;
         this.clients = new HashMap<>();
-        this.authenticationProvider = new InMemoryAuthenticationProvider(this);
+        getProperties();
+        this.authenticationProvider = new DatabaseAuthenticationProvider(
+                this,
+                properties.getProperty("database_url"),
+                properties.getProperty("database_login"),
+                properties.getProperty("database_password"));
+    }
+
+    private void getProperties() throws IOException {
+        properties = new Properties();
+        ClassLoader loader = Thread.currentThread().getContextClassLoader();
+        InputStream stream = loader.getResourceAsStream(CONFIG_PATH);
+        properties.load(stream);
     }
 
     public AuthenticationProvider getAuthenticationProvider() {
         return authenticationProvider;
     }
 
-    public void start() {
+    public void start() throws Exception {
         try (ServerSocket socket = new ServerSocket(this.port)) {
             System.out.println("Server started on port " + port);
             authenticationProvider.initialize();
@@ -34,6 +52,10 @@ public class Server {
             }
         } catch (IOException e) {
             e.printStackTrace();
+        } finally {
+            if (authenticationProvider != null) {
+                authenticationProvider.close();
+            }
         }
     }
 
