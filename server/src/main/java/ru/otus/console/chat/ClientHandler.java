@@ -1,6 +1,8 @@
 package ru.otus.console.chat;
 
+import ru.otus.console.chat.auth.Role;
 import ru.otus.console.chat.auth.UserRoles;
+import ru.otus.console.chat.auth.info.Commands;
 
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
@@ -15,7 +17,7 @@ public class ClientHandler {
     private final DataInputStream in;
     private final DataOutputStream out;
     private String userName;
-    private Set<UserRoles> userRoles;
+    private final Set<Role> userRoles;
 
     private final static String SEPARATOR = "--------------------------------------------------------";
 
@@ -27,11 +29,11 @@ public class ClientHandler {
         this.userName = userName;
     }
 
-    public void addUserRole(UserRoles userRole) {
+    public void setUserRole(Role userRole) {
         this.userRoles.add(userRole);
     }
 
-    public void addUserRole(Set<UserRoles> userRoles) {
+    public void setUserRole(Set<Role> userRoles) {
         this.userRoles.addAll(userRoles);
     }
 
@@ -46,10 +48,12 @@ public class ClientHandler {
             try {
                 System.out.println("Client connected");
                 while (true) {
-                    send(SEPARATOR + "\nLog in or registration account\n" +
-                            "Auth format         — /auth {login} {password}\n" +
-                            "Registration format — /reg {login} {password} {userName}\n" + SEPARATOR);
+                    send(SEPARATOR + "\nLog in or registration account\n" + "Info: /help\n" + SEPARATOR);
                     String input = read();
+                    if (input.equals("/help")) {
+                        send(Commands.COMMANDS_BEFORE_AUTH);
+                        continue;
+                    }
                     if (input.equals("/exit")) {
                         send("/exit_ok");
                         return;
@@ -82,6 +86,8 @@ public class ClientHandler {
                     if (input.startsWith("/")) {
                         String[] parts = input.split(" ", 3);
                         switch (parts[0]) {
+                            case "/help":
+                                this.send(Commands.COMMANDS_AFTER_AUTH);
                             case "/exit":
                                 send("/exit_ok");
                                 breakLoop = true;
@@ -96,13 +102,28 @@ public class ClientHandler {
                                 server.sendWhisperMessage(this, dstName, message);
                                 break;
                             case "/kick":
-                                if (userRoles.contains(UserRoles.ADMIN)) {
+                                if (userRoles.contains(new Role(UserRoles.ADMIN.name()))) {
                                     if (parts.length != 2) {
                                         this.send("ERROR — Incorrect command format");
                                         break;
                                     }
                                     String targetUserName = parts[1];
                                     server.disconnectUser(this, targetUserName);
+                                    server.getAuthenticationProvider().blockOrUnblockUser("Y", targetUserName);
+                                    this.send("Username \"" + targetUserName + "\" blocked");
+                                } else {
+                                    this.send("ERROR — Permission denied");
+                                }
+                                break;
+                            case "/unblock":
+                                if (userRoles.contains(new Role(UserRoles.ADMIN.name()))) {
+                                    if (parts.length != 2) {
+                                        this.send("ERROR — Incorrect command format");
+                                        break;
+                                    }
+                                    String targetUserName = parts[1];
+                                    server.getAuthenticationProvider().blockOrUnblockUser("N", targetUserName);
+                                    this.send("Username \"" + targetUserName + "\" unblocked");
                                 } else {
                                     this.send("ERROR — Permission denied");
                                 }

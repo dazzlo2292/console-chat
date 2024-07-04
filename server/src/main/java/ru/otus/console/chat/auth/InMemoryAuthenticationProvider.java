@@ -10,13 +10,15 @@ public class InMemoryAuthenticationProvider implements AuthenticationProvider {
     private final Server server;
     private final Map<String, User> users;
 
+    private static int sequenceId = 1;
+
     public InMemoryAuthenticationProvider(Server server) {
         this.server = server;
         this.users = new HashMap<>();
-        User admin = new User("admin","admin", "admin");
-        admin.addRole(UserRoles.ADMIN);
+        User admin = new User(sequenceId++,"admin","admin", "admin");
+        admin.setRole(new Role(UserRoles.ADMIN.name()));
         users.put(admin.getUserName(), admin);
-        users.put("user", new User("user","user", "user"));
+        users.put("user", new User(sequenceId++,"user","user", "user"));
     }
 
     @Override
@@ -68,7 +70,7 @@ public class InMemoryAuthenticationProvider implements AuthenticationProvider {
             return false;
         }
         clientHandler.setUserName(authUserName);
-        clientHandler.addUserRole(users.get(authUserName).getRoles());
+        clientHandler.setUserRole(users.get(authUserName).getRoles());
         server.subscribe(clientHandler);
         clientHandler.send("/auth_ok " + authUserName);
         return true;
@@ -93,11 +95,21 @@ public class InMemoryAuthenticationProvider implements AuthenticationProvider {
             clientHandler.send("ERROR — UserName already exists");
             return false;
         }
-        users.put(userName,new User(login, password, userName));
+        users.put(userName,new User(sequenceId++,login, password, userName));
         clientHandler.setUserName(userName);
-        clientHandler.addUserRole(users.get(userName).getRoles());
+        clientHandler.setUserRole(users.get(userName).getRoles());
         server.subscribe(clientHandler);
         clientHandler.send("/reg_ok " + userName);
         return true;
+    }
+
+    @Override
+    public void close() throws Exception {
+
+    }
+
+    @Override
+    public void blockOrUnblockUser(String status, String userName) {
+
     }
 }
