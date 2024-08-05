@@ -112,4 +112,9 @@ public class InMemoryAuthenticationProvider implements AuthenticationProvider {
     public void blockOrUnblockUser(String status, String userName) {
 
     }
+
+    @Override
+    public void setUserName(String currentUserName, String newUserName) {
+
+    }
 }

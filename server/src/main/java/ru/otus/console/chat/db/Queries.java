@@ -39,4 +39,8 @@ public class Queries {
     public final static String Q_BLOCK_OR_UNBLOCK_USER = """
             UPDATE users_tab SET block_fl = ? WHERE user_name = ?
             """;
+
+    public final static String Q_SET_USERNAME = """
+            UPDATE users_tab SET user_name = ? WHERE user_name = ?
+            """;
 }

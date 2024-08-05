@@ -1,5 +1,7 @@
 package ru.otus.console.chat.auth;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import ru.otus.console.chat.ClientHandler;
 import ru.otus.console.chat.Server;
 import ru.otus.console.chat.db.Queries;
@@ -8,6 +10,8 @@ import java.sql.*;
 import java.util.*;
 
 public class DatabaseAuthenticationProvider implements AuthenticationProvider{
+    private static final Logger logger = LogManager.getLogger(DatabaseAuthenticationProvider.class.getName());
+
     private final Server server;
     private final Connection connection;
     private final Statement statement;
@@ -20,7 +24,7 @@ public class DatabaseAuthenticationProvider implements AuthenticationProvider{
 
     @Override
     public void initialize() {
-        System.out.println("AuthenticationProvider started. Mode: Database");
+        logger.info("AuthenticationProvider started. Mode: Database");
     }
 
     private String getUserNameByLoginAndPassword(String login, String password) {
@@ -31,8 +35,8 @@ public class DatabaseAuthenticationProvider implements AuthenticationProvider{
             if (rs.next()) {
                 return rs.getString("user_name");
             }
-        } catch (SQLException se) {
-            se.printStackTrace();
+        } catch (SQLException e) {
+            logger.error("Ошибка выполнения запроса", e);
         }
         return null;
     }
@@ -44,8 +48,8 @@ public class DatabaseAuthenticationProvider implements AuthenticationProvider{
             if (rs.isBeforeFirst()) {
                 return true;
             }
-        } catch (SQLException se) {
-            se.printStackTrace();
+        } catch (SQLException e) {
+            logger.error("Ошибка выполнения запроса", e);
         }
         return false;
     }
@@ -57,8 +61,8 @@ public class DatabaseAuthenticationProvider implements AuthenticationProvider{
             if (rs.isBeforeFirst()) {
                 return true;
             }
-        } catch (SQLException se) {
-            se.printStackTrace();
+        } catch (SQLException e) {
+            logger.error("Ошибка выполнения запроса", e);
         }
         return false;
     }
@@ -81,8 +85,8 @@ public class DatabaseAuthenticationProvider implements AuthenticationProvider{
             while (rs.next()) {
                 clientHandler.setUserRole(new Role(rs.getString("name")));
             }
-        } catch (SQLException se) {
-            se.printStackTrace();
+        } catch (SQLException e) {
+            logger.error("Ошибка выполнения запроса", e);
         }
         server.subscribe(clientHandler);
         clientHandler.send("/auth_ok " + authUserName);
@@ -114,8 +118,8 @@ public class DatabaseAuthenticationProvider implements AuthenticationProvider{
             ps.setString(3, userName);
             ps.setString(4, login);
             ps.executeUpdate();
-        } catch (SQLException se) {
-            se.printStackTrace();
+        } catch (SQLException e) {
+            logger.error("Ошибка выполнения запроса", e);
         }
         clientHandler.setUserName(userName);
         try (PreparedStatement ps = connection.prepareStatement(Queries.Q_GET_ROLES_OF_USER)) {
@@ -124,8 +128,8 @@ public class DatabaseAuthenticationProvider implements AuthenticationProvider{
             while (rs.next()) {
                 clientHandler.setUserRole(new Role(rs.getString("name")));
             }
-        } catch (SQLException se) {
-            se.printStackTrace();
+        } catch (SQLException e) {
+            logger.error("Ошибка выполнения запроса", e);
         }
         server.subscribe(clientHandler);
         clientHandler.send("/reg_ok " + userName);
@@ -138,8 +142,19 @@ public class DatabaseAuthenticationProvider implements AuthenticationProvider{
             ps.setString(1, blockStatus);
             ps.setString(2, userName);
             ps.executeUpdate();
-        } catch (SQLException se) {
-            se.printStackTrace();
+        } catch (SQLException e) {
+            logger.error("Ошибка выполнения запроса", e);
+        }
+    }
+
+    @Override
+    public void setUserName(String currentUserName, String newUserName) {
+        try (PreparedStatement ps = connection.prepareStatement(Queries.Q_SET_USERNAME)) {
+            ps.setString(1, newUserName);
+            ps.setString(2, currentUserName);
+            ps.executeUpdate();
+        } catch (SQLException e) {
+            logger.error("Ошибка выполнения запроса", e);
         }
     }
 
@@ -152,8 +167,8 @@ public class DatabaseAuthenticationProvider implements AuthenticationProvider{
                         rs.getString("password"), rs.getString("user_name"));
                 users.put(rs.getString("user_name"),user);
             }
-        } catch (SQLException se) {
-            se.printStackTrace();
+        } catch (SQLException e) {
+            logger.error("Ошибка выполнения запроса", e);
         }
 
         for (User user : users.values()) {
@@ -170,28 +185,28 @@ public class DatabaseAuthenticationProvider implements AuthenticationProvider{
             while (rs.next()) {
                 roles.add(new Role(rs.getString("name")));
             }
-        } catch (SQLException se) {
-            se.printStackTrace();
+        } catch (SQLException e) {
+            logger.error("Ошибка выполнения запроса", e);
         }
         return roles;
     }
 
     @Override
-    public void close() throws Exception {
+    public void close() {
         try {
             if (connection != null) {
                 connection.close();
             }
-        } catch (SQLException se) {
-            se.printStackTrace();
+        } catch (SQLException e) {
+            logger.error("Ошибка при закрытии соединения с базой данных", e);
         }
 
         try {
             if (statement != null) {
                 statement.close();
             }
-        } catch (SQLException se) {
-            se.printStackTrace();
+        } catch (SQLException e) {
+            logger.error("Ошибка при закрытии соединения с базой данных", e);
         }
     }
 }

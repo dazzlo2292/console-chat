@@ -14,4 +14,6 @@ public interface AuthenticationProvider extends AutoCloseable{
     Map<String, User> getUsers();
 
     void blockOrUnblockUser(String status, String userName);
+
+    void setUserName(String currentUserName, String newUserName);
 }

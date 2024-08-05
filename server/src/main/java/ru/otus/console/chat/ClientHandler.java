@@ -1,5 +1,7 @@
 package ru.otus.console.chat;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import ru.otus.console.chat.auth.Role;
 import ru.otus.console.chat.auth.UserRoles;
 import ru.otus.console.chat.auth.info.Commands;
@@ -12,6 +14,8 @@ import java.util.HashSet;
 import java.util.Set;
 
 public class ClientHandler {
+    private static final Logger logger = LogManager.getLogger(ClientHandler.class.getName());
+
     private final Server server;
     private final Socket socket;
     private final DataInputStream in;
@@ -46,7 +50,7 @@ public class ClientHandler {
 
         new Thread(() -> {
             try {
-                System.out.println("Client connected");
+                logger.info("Client connected");
                 while (true) {
                     send(SEPARATOR + "\nLog in or registration account\n" + "Info: /help\n" + SEPARATOR);
                     String input = read();
@@ -101,6 +105,25 @@ public class ClientHandler {
                                 System.out.println(message);
                                 server.sendWhisperMessage(this, dstName, message);
                                 break;
+                            case "/activelist":
+                                if (parts.length > 1) {
+                                    this.send("ERROR — Incorrect command format");
+                                    break;
+                                }
+                                server.sendActiveClientsList(this);
+                                break;
+                            case "/changenick":
+                                if (parts.length != 2) {
+                                    this.send("ERROR — Incorrect command format");
+                                    break;
+                                }
+                                String oldUserName = this.getUserName();
+                                String newUserName = parts[1];
+                                server.getAuthenticationProvider().setUserName(oldUserName, newUserName);
+                                this.setUserName(newUserName);
+                                server.sendInfoAfterChangeUserName(oldUserName, newUserName);
+                                this.send("Your userName is changed to \"" + newUserName + "\"");
+                                break;
                             case "/kick":
                                 if (userRoles.contains(new Role(UserRoles.ADMIN.name()))) {
                                     if (parts.length != 2) {
@@ -141,7 +164,7 @@ public class ClientHandler {
                     }
                 }
             } catch (IOException e) {
-                e.printStackTrace();
+                logger.error("Непредвиденная ошибка ввода/вывода", e);
             } finally {
                 disconnect();
             }
@@ -156,7 +179,7 @@ public class ClientHandler {
         try {
             out.writeUTF(message);
         } catch (IOException e) {
-            e.printStackTrace();
+            logger.error("Не удалось отправить сообщение", e);
         }
     }
 
@@ -166,7 +189,7 @@ public class ClientHandler {
             try {
                 in.close();
             } catch (IOException e) {
-                e.printStackTrace();
+                logger.error("Ошибка при закрытии входного потока", e);
             }
         }
 
@@ -174,14 +197,14 @@ public class ClientHandler {
             try {
                 out.close();
             } catch (IOException e) {
-                e.printStackTrace();
+                logger.error("Ошибка при закрытии исходящего потока", e);
             }
         }
 
         try {
             socket.close();
         } catch (IOException e) {
-            e.printStackTrace();
+            logger.error("Ошибка при закрытии сокета", e);
         }
     }
 }
