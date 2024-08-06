@@ -15,6 +15,8 @@ import java.time.format.DateTimeFormatter;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Properties;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 public class Server {
     private static final Logger logger = LogManager.getLogger(Server.class.getName());
@@ -24,6 +26,7 @@ public class Server {
     private final Map<String, ClientHandler> clients;
     private final AuthenticationProvider authenticationProvider;
     private Properties properties;
+    private final ExecutorService connectionsPool = Executors.newCachedThreadPool();
 
     private static final String CONFIG_PATH = "config.properties";
 
@@ -36,6 +39,11 @@ public class Server {
                 properties.getProperty("database_url"),
                 properties.getProperty("database_login"),
                 properties.getProperty("database_password"));
+
+        Runtime.getRuntime().addShutdownHook(new Thread(()-> {
+            logger.error("Admin shutdown server");
+            broadcastMessages("Admin shutdown server");
+        }));
     }
 
     private void getProperties() throws IOException {
@@ -49,8 +57,10 @@ public class Server {
         return authenticationProvider;
     }
 
+    public ExecutorService getConnectionsPool() { return connectionsPool; }
+
     public void start() throws Exception {
-        try (ServerSocket socket = new ServerSocket(this.port)) {
+        try (ServerSocket socket = new ServerSocket(port)) {
             logger.info("Server started on port {}", port);
             authenticationProvider.initialize();
             while (true) {
@@ -63,7 +73,12 @@ public class Server {
             if (authenticationProvider != null) {
                 authenticationProvider.close();
             }
+            connectionsPool.shutdown();
         }
+    }
+
+    public void shutdown() {
+        System.exit(0);
     }
 
     public synchronized void sendWhisperMessage(ClientHandler srcClient, String dstName, String message) {
@@ -117,6 +132,12 @@ public class Server {
             return;
         }
         srcClient.send("ERROR — userName not found!");
+    }
+
+    public synchronized void disconnectAfkUser(String userName) {
+        if (clients.containsKey(userName)) {
+            clients.get(userName).send("/afk");
+        }
     }
 
     public synchronized boolean isUserNameBusy(String userName) {

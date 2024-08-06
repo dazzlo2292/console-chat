@@ -43,6 +43,15 @@ public class Client {
                         active = false;
                         break;
                     }
+                    if (input.equals("/you_afk")) {
+                        System.out.println("You are disconnected by inactivity");
+                        out.writeUTF("/afk");
+                        active = false;
+                        break;
+                    }
+                    if (input.equals("/shutdown_ok")) {
+                        break;
+                    }
                     System.out.println(input);
                 }
             } catch (IOException e) {
@@ -55,7 +64,7 @@ public class Client {
         while (active) {
             String message = scanner.nextLine();
             out.writeUTF(message);
-            if (message.equals("/exit")) {
+            if (message.equals("/exit") || message.equals("/shutdown")) {
                 break;
             }
         }

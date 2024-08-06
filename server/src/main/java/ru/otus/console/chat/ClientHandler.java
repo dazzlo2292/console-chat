@@ -2,6 +2,7 @@ package ru.otus.console.chat;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import ru.otus.console.chat.auth.CheckAfkJob;
 import ru.otus.console.chat.auth.Role;
 import ru.otus.console.chat.auth.UserRoles;
 import ru.otus.console.chat.auth.info.Commands;
@@ -15,6 +16,7 @@ import java.util.Set;
 
 public class ClientHandler {
     private static final Logger logger = LogManager.getLogger(ClientHandler.class.getName());
+    private final CheckAfkJob checkAfkJob;
 
     private final Server server;
     private final Socket socket;
@@ -48,7 +50,11 @@ public class ClientHandler {
         this.out = new DataOutputStream(this.socket.getOutputStream());
         this.userRoles = new HashSet<>();
 
-        new Thread(() -> {
+        checkAfkJob = new CheckAfkJob(this, 1200);
+
+        server.getConnectionsPool().execute(checkAfkJob::run);
+
+        server.getConnectionsPool().execute(()-> {
             try {
                 logger.info("Client connected");
                 while (true) {
@@ -60,6 +66,9 @@ public class ClientHandler {
                     }
                     if (input.equals("/exit")) {
                         send("/exit_ok");
+                        return;
+                    }
+                    if (input.equals("/afk")) {
                         return;
                     }
                     if (input.startsWith("/auth ")) {
@@ -96,7 +105,7 @@ public class ClientHandler {
                                 send("/exit_ok");
                                 breakLoop = true;
                                 break;
-                            case "/disconnect":
+                            case "/disconnect", "/afk":
                                 breakLoop = true;
                                 break;
                             case "/w":
@@ -151,6 +160,20 @@ public class ClientHandler {
                                     this.send("ERROR — Permission denied");
                                 }
                                 break;
+                            case "/shutdown":
+                                if (userRoles.contains(new Role(UserRoles.ADMIN.name()))) {
+                                    if (parts.length != 1) {
+                                        this.send("ERROR — Incorrect command format");
+                                        break;
+                                    }
+                                    send("/shutdown_ok");
+                                    server.shutdown();
+                                    breakLoop = true;
+                                    break;
+                                } else {
+                                    this.send("ERROR — Permission denied");
+                                }
+                                break;
                             default:
                                 this.send("ERROR — Unknown command");
                         }
@@ -168,11 +191,13 @@ public class ClientHandler {
             } finally {
                 disconnect();
             }
-        }).start();
+        });
     }
 
     public String read() throws IOException {
-        return in.readUTF();
+        String input = in.readUTF();
+        checkAfkJob.resetLastActivity();
+        return input;
     }
 
     public void send(String message) {
