@@ -5,8 +5,11 @@ import org.apache.logging.log4j.Logger;
 import ru.otus.console.chat.ClientHandler;
 import ru.otus.console.chat.Server;
 import ru.otus.console.chat.db.Queries;
+import ru.otus.console.chat.jobs.CheckAfkJob;
+import ru.otus.console.chat.jobs.UnblockUsersJob;
 
 import java.sql.*;
+import java.time.LocalDateTime;
 import java.util.*;
 
 public class DatabaseAuthenticationProvider implements AuthenticationProvider{
@@ -24,6 +27,10 @@ public class DatabaseAuthenticationProvider implements AuthenticationProvider{
 
     @Override
     public void initialize() {
+        UnblockUsersJob unblockUsersJob = new UnblockUsersJob(server);
+
+        server.getConnectionsPool().execute(unblockUsersJob::run);
+
         logger.info("AuthenticationProvider started. Mode: Database");
     }
 
@@ -137,10 +144,17 @@ public class DatabaseAuthenticationProvider implements AuthenticationProvider{
     }
 
     @Override
-    public void blockOrUnblockUser(String blockStatus, String userName) {
+    public void blockOrUnblockUser(String blockStatus, int days, String userName) {
         try (PreparedStatement ps = connection.prepareStatement(Queries.Q_BLOCK_OR_UNBLOCK_USER)) {
+            Timestamp newTimestamp;
+            if (days == -1) {
+                newTimestamp = Timestamp.valueOf("2999-12-31 23:59:59.999");
+            } else {
+                newTimestamp = Timestamp.valueOf(LocalDateTime.now().plusDays(days));
+            }
             ps.setString(1, blockStatus);
-            ps.setString(2, userName);
+            ps.setTimestamp(2, newTimestamp);
+            ps.setString(3, userName);
             ps.executeUpdate();
         } catch (SQLException e) {
             logger.error("Ошибка выполнения запроса", e);
@@ -176,6 +190,23 @@ public class DatabaseAuthenticationProvider implements AuthenticationProvider{
         }
         return users;
     }
+
+    public Set<String> getUsersForUnblock() {
+        Set<String> blockedUserNames = new HashSet<>();
+
+        try (PreparedStatement ps = connection.prepareStatement(Queries.Q_GET_ALL_BLOCKED_USERS)) {
+            ps.setTimestamp(1, Timestamp.valueOf(LocalDateTime.now()));
+            ResultSet rs = ps.executeQuery();
+            while (rs.next()) {
+                blockedUserNames.add(rs.getString("user_name"));
+            }
+        } catch (SQLException e) {
+            logger.error("Ошибка выполнения запроса", e);
+        }
+
+        return blockedUserNames;
+    }
+
 
     public Set<Role> getRolesOfUser(String userName) {
         Set<Role> roles = new HashSet<>();

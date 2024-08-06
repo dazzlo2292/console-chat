@@ -134,12 +134,6 @@ public class Server {
         srcClient.send("ERROR — userName not found!");
     }
 
-    public synchronized void disconnectAfkUser(String userName) {
-        if (clients.containsKey(userName)) {
-            clients.get(userName).send("/afk");
-        }
-    }
-
     public synchronized boolean isUserNameBusy(String userName) {
         return clients.containsKey(userName);
     }

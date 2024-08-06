@@ -12,7 +12,8 @@ public class Commands {
             -changenick — Change your userName                 Format: /changenick {newUserName}
             
             Only for Admin:
-            -kick     — Kick out user of the chat and block. Format: /kick {userName}
+            -ban     — Kick out user of the chat and block.
+            ! If days is empty — permanent ban !             Format: /ban {userName} [days]
             -unblock  — Unblock user.                        Format: /unblock {userName}
             -shutdown — Shutdown server                      Format: /shutdown""";
 }

@@ -5,6 +5,7 @@ import ru.otus.console.chat.Server;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Set;
 
 public class InMemoryAuthenticationProvider implements AuthenticationProvider {
     private final Server server;
@@ -24,6 +25,11 @@ public class InMemoryAuthenticationProvider implements AuthenticationProvider {
     @Override
     public Map<String, User> getUsers() {
         return users;
+    }
+
+    @Override
+    public Set<String> getUsersForUnblock() {
+        return Set.of();
     }
 
     @Override
@@ -109,7 +115,7 @@ public class InMemoryAuthenticationProvider implements AuthenticationProvider {
     }
 
     @Override
-    public void blockOrUnblockUser(String status, String userName) {
+    public void blockOrUnblockUser(String status, int days, String userName) {
 
     }
 

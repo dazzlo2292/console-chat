@@ -38,7 +38,7 @@ public class Client {
                         continue;
                     }
                     if (input.equals("/disconnect")) {
-                        System.out.println("Admin kick you of chat");
+                        System.out.println("Admin banned you");
                         out.writeUTF("/disconnect");
                         active = false;
                         break;

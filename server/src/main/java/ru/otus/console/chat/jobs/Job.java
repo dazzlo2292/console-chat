@@ -1,4 +1,4 @@
-package ru.otus.console.chat.auth;
+package ru.otus.console.chat.jobs;
 
 public interface Job {
     void run();

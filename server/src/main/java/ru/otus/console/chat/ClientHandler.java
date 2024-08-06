@@ -2,7 +2,7 @@ package ru.otus.console.chat;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import ru.otus.console.chat.auth.CheckAfkJob;
+import ru.otus.console.chat.jobs.CheckAfkJob;
 import ru.otus.console.chat.auth.Role;
 import ru.otus.console.chat.auth.UserRoles;
 import ru.otus.console.chat.auth.info.Commands;
@@ -133,16 +133,29 @@ public class ClientHandler {
                                 server.sendInfoAfterChangeUserName(oldUserName, newUserName);
                                 this.send("Your userName is changed to \"" + newUserName + "\"");
                                 break;
-                            case "/kick":
+                            case "/ban":
                                 if (userRoles.contains(new Role(UserRoles.ADMIN.name()))) {
-                                    if (parts.length != 2) {
-                                        this.send("ERROR — Incorrect command format");
+                                    if (parts.length == 2) {
+                                        String targetUserName = parts[1];
+                                        server.disconnectUser(this, targetUserName);
+                                        server.getAuthenticationProvider().blockOrUnblockUser("Y", -1, targetUserName);
+                                        this.send("Username \"" + targetUserName + "\" blocked");
                                         break;
                                     }
-                                    String targetUserName = parts[1];
-                                    server.disconnectUser(this, targetUserName);
-                                    server.getAuthenticationProvider().blockOrUnblockUser("Y", targetUserName);
-                                    this.send("Username \"" + targetUserName + "\" blocked");
+                                    if (parts.length == 3) {
+                                        String targetUserName = parts[1];
+                                        try {
+                                            int daysCount = Integer.parseInt(parts[2]);
+                                            server.disconnectUser(this, targetUserName);
+                                            server.getAuthenticationProvider().blockOrUnblockUser("Y", daysCount, targetUserName);
+                                            this.send("Username \"" + targetUserName + "\" blocked");
+                                            break;
+                                        } catch (NumberFormatException e) {
+                                            this.send("ERROR — Incorrect [days] parameter type");
+                                            break;
+                                        }
+                                    }
+                                    this.send("ERROR — Incorrect command format");
                                 } else {
                                     this.send("ERROR — Permission denied");
                                 }
@@ -154,7 +167,7 @@ public class ClientHandler {
                                         break;
                                     }
                                     String targetUserName = parts[1];
-                                    server.getAuthenticationProvider().blockOrUnblockUser("N", targetUserName);
+                                    server.getAuthenticationProvider().blockOrUnblockUser("N", 0, targetUserName);
                                     this.send("Username \"" + targetUserName + "\" unblocked");
                                 } else {
                                     this.send("ERROR — Permission denied");
