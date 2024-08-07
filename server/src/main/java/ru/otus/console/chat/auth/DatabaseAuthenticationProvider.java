@@ -5,7 +5,6 @@ import org.apache.logging.log4j.Logger;
 import ru.otus.console.chat.ClientHandler;
 import ru.otus.console.chat.Server;
 import ru.otus.console.chat.db.Queries;
-import ru.otus.console.chat.jobs.CheckAfkJob;
 import ru.otus.console.chat.jobs.UnblockUsersJob;
 
 import java.sql.*;

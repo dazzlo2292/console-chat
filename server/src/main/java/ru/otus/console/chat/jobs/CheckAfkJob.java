@@ -1,19 +1,19 @@
 package ru.otus.console.chat.jobs;
 
 import ru.otus.console.chat.ClientHandler;
-
-import java.util.Timer;
-import java.util.TimerTask;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 
 public class CheckAfkJob implements Job {
     private final ClientHandler clientHandler;
-    private final Timer timer;
+    private final ScheduledExecutorService service;
     private long lastActivity;
     private final int timeMillisLimit;
 
     public CheckAfkJob(ClientHandler clientHandler, int secondLimit) {
         this.clientHandler = clientHandler;
-        this.timer = new Timer();
+        this.service = Executors.newSingleThreadScheduledExecutor();
         this.lastActivity = System.currentTimeMillis();
         this.timeMillisLimit = secondLimit * 1000;
     }
@@ -24,24 +24,17 @@ public class CheckAfkJob implements Job {
 
     @Override
     public void run() {
-        timer.scheduleAtFixedRate(new TimerTask() {
-            @Override
-            public void run() {
-                if (System.currentTimeMillis() - lastActivity >= timeMillisLimit) {
-                    clientHandler.send("/you_afk");
-                    stop();
-                }
-                try {
-                    Thread.sleep(30000);
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
-                }
+        service.scheduleWithFixedDelay((Runnable) ()-> {
+            if (System.currentTimeMillis() - lastActivity >= timeMillisLimit) {
+                clientHandler.send("/you_afk");
+                stop();
             }
-        }, 0, 1000);
+        }, 0, 10, TimeUnit.SECONDS);
+
     }
 
     @Override
     public void stop() {
-        timer.cancel();
+        service.shutdown();
     }
 }

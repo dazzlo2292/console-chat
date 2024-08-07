@@ -1,40 +1,32 @@
 package ru.otus.console.chat.jobs;
 
 import ru.otus.console.chat.Server;
-
 import java.util.Set;
-import java.util.Timer;
-import java.util.TimerTask;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 
 public class UnblockUsersJob implements Job {
     private final Server server;
-    private final Timer timer;
+    private final ScheduledExecutorService service;
 
     public UnblockUsersJob(Server server) {
         this.server = server;
-        this.timer = new Timer();
+        this.service = Executors.newSingleThreadScheduledExecutor();
     }
 
     @Override
     public void run() {
-        timer.scheduleAtFixedRate(new TimerTask() {
-            @Override
-            public void run() {
-                try {
-                Set<String> users = server.getAuthenticationProvider().getUsersForUnblock();
-                for (String userName : users) {
-                    server.getAuthenticationProvider().blockOrUnblockUser("N", 0, userName);
-                }
-                Thread.sleep(10000);
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
-                }
+        service.scheduleWithFixedDelay((Runnable) () -> {
+            Set<String> users = server.getAuthenticationProvider().getUsersForUnblock();
+            for (String userName : users) {
+                server.getAuthenticationProvider().blockOrUnblockUser("N", 0, userName);
             }
-        }, 0, 1000);
+        }, 0, 10, TimeUnit.SECONDS );
     }
 
     @Override
     public void stop() {
-        timer.cancel();
+        service.shutdown();
     }
 }

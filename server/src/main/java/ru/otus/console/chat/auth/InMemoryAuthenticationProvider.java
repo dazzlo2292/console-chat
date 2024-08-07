@@ -110,7 +110,7 @@ public class InMemoryAuthenticationProvider implements AuthenticationProvider {
     }
 
     @Override
-    public void close() throws Exception {
+    public void close() {
 
     }
 
