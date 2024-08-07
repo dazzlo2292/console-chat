@@ -1,5 +1,7 @@
 package ru.otus.console.chat;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import ru.otus.console.chat.auth.AuthenticationProvider;
 import ru.otus.console.chat.auth.DatabaseAuthenticationProvider;
 
@@ -8,15 +10,23 @@ import java.io.InputStream;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.sql.SQLException;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Properties;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 public class Server {
+    private static final Logger logger = LogManager.getLogger(Server.class.getName());
+    private static final DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+
     private final int port;
     private final Map<String, ClientHandler> clients;
     private final AuthenticationProvider authenticationProvider;
     private Properties properties;
+    private final ExecutorService connectionsPool = Executors.newCachedThreadPool();
 
     private static final String CONFIG_PATH = "config.properties";
 
@@ -29,6 +39,11 @@ public class Server {
                 properties.getProperty("database_url"),
                 properties.getProperty("database_login"),
                 properties.getProperty("database_password"));
+
+        Runtime.getRuntime().addShutdownHook(new Thread(()-> {
+            logger.error("Admin shutdown server");
+            broadcastMessages("Admin shutdown server");
+        }));
     }
 
     private void getProperties() throws IOException {
@@ -42,35 +57,62 @@ public class Server {
         return authenticationProvider;
     }
 
+    public ExecutorService getConnectionsPool() { return connectionsPool; }
+
     public void start() throws Exception {
-        try (ServerSocket socket = new ServerSocket(this.port)) {
-            System.out.println("Server started on port " + port);
+        try (ServerSocket socket = new ServerSocket(port)) {
+            logger.info("Server started on port {}", port);
             authenticationProvider.initialize();
             while (true) {
                 Socket connection = socket.accept();
                 new ClientHandler(this,connection);
             }
         } catch (IOException e) {
-            e.printStackTrace();
+            logger.error("Не удалось запустить сервер", e);
         } finally {
             if (authenticationProvider != null) {
                 authenticationProvider.close();
             }
+            connectionsPool.shutdown();
         }
+    }
+
+    public void shutdown() {
+        System.exit(0);
     }
 
     public synchronized void sendWhisperMessage(ClientHandler srcClient, String dstName, String message) {
         if (clients.containsKey(dstName)) {
-            clients.get(dstName).send(message);
-            srcClient.send(message);
+            String messageWithDateTime = String.format("[%s] %s", LocalDateTime.now().format(formatter), message);
+            clients.get(dstName).send(messageWithDateTime);
+            srcClient.send(messageWithDateTime);
             return;
         }
         srcClient.send("ERROR — userName not found!");
     }
 
     public synchronized void broadcastMessages(String message){
+        String messageWithDateTime = String.format("[%s] %s", LocalDateTime.now().format(formatter), message);
         for (ClientHandler client : clients.values()) {
-            client.send(message);
+            client.send(messageWithDateTime);
+        }
+    }
+
+    public synchronized void sendActiveClientsList(ClientHandler srcClient) {
+        StringBuilder clientList = new StringBuilder();
+        for (ClientHandler client : clients.values()) {
+            clientList.append(client.getUserName()).append("\r\n");
+        }
+        srcClient.send(clientList.toString());
+    }
+
+    public synchronized void sendInfoAfterChangeUserName(String oldUserName, String newUserName) {
+        String message = String.format("[%s] UserName \"%s\" is changed to \"%s\".",
+                LocalDateTime.now().format(formatter), oldUserName, newUserName);
+        for (ClientHandler client : clients.values()) {
+            if (!client.getUserName().equals(newUserName)) {
+                client.send(message);
+            }
         }
     }
 

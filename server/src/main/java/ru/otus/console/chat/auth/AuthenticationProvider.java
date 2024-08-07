@@ -3,6 +3,7 @@ package ru.otus.console.chat.auth;
 import ru.otus.console.chat.ClientHandler;
 
 import java.util.Map;
+import java.util.Set;
 
 public interface AuthenticationProvider extends AutoCloseable{
     void initialize();
@@ -13,5 +14,9 @@ public interface AuthenticationProvider extends AutoCloseable{
 
     Map<String, User> getUsers();
 
-    void blockOrUnblockUser(String status, String userName);
+    Set<String> getUsersForUnblock();
+
+    void blockOrUnblockUser(String status, int days, String userName);
+
+    void setUserName(String currentUserName, String newUserName);
 }

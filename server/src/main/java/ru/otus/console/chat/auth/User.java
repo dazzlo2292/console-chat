@@ -8,7 +8,7 @@ public class User {
     private final String login;
     private final String password;
     private final String userName;
-    private Set<Role> roles;
+    private final Set<Role> roles;
 
     public User(int id, String login, String password, String userName) {
         this.id = id;

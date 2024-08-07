@@ -7,6 +7,7 @@ create table users_tab (
 	"password" varchar(30) not null,
 	user_name varchar(30),
 	block_fl char(1) check (block_fl in ('Y','N')) default 'N',
+	blocked_before timestamp,
 	created_at timestamp default current_timestamp,
 	constraint user_login unique (login)
 );
