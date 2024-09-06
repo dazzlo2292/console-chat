@@ -6,6 +6,12 @@ public class Queries {
             WHERE ut.block_fl = 'N'
             """;
 
+    public final static String Q_GET_ALL_BLOCKED_USERS = """
+            SELECT ut.user_name FROM users_tab ut
+            WHERE ut.block_fl = 'Y'
+            AND ut.blocked_before <= ?
+            """;
+
     public final static String Q_GET_ROLES_OF_USER = """
             SELECT rt.name FROM roles_tab rt
             JOIN users_roles_tab urt ON urt.role_id = rt.id
@@ -37,6 +43,10 @@ public class Queries {
             """;
 
     public final static String Q_BLOCK_OR_UNBLOCK_USER = """
-            UPDATE users_tab SET block_fl = ? WHERE user_name = ?
+            UPDATE users_tab SET block_fl = ?, blocked_before = ? WHERE user_name = ?
+            """;
+
+    public final static String Q_SET_USERNAME = """
+            UPDATE users_tab SET user_name = ? WHERE user_name = ?
             """;
 }

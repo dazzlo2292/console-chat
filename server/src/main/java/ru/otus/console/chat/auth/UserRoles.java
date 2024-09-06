@@ -5,11 +5,11 @@ public enum UserRoles {
     USER("USER","Пользователь"),
     ADMIN("ADMIN","Администратор");
 
-    private String name;
-    private String description;
+    private final String name;
+    private final String description;
 
     UserRoles(String name, String description) {
-        this.name =
+        this.name = name;
         this.description = description;
     }
 }
