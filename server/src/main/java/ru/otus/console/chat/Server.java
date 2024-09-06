@@ -78,6 +78,7 @@ public class Server {
     }
 
     public void shutdown() {
+        //TODO: Добавить отключение всех клиентов
         System.exit(0);
     }
 

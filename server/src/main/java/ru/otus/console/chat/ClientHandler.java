@@ -50,6 +50,7 @@ public class ClientHandler {
         this.out = new DataOutputStream(this.socket.getOutputStream());
         this.userRoles = new HashSet<>();
 
+        //TODO: Создавать один CheckAfkJob для проверки всех клиентов
         checkAfkJob = new CheckAfkJob(this, 1200);
 
         server.getConnectionsPool().execute(checkAfkJob::run);

@@ -18,6 +18,7 @@ public class UnblockUsersJob implements Job {
     @Override
     public void run() {
         service.scheduleWithFixedDelay((Runnable) () -> {
+            //TODO: Разблокировать с помощью одного UPDATE
             Set<String> users = server.getAuthenticationProvider().getUsersForUnblock();
             for (String userName : users) {
                 server.getAuthenticationProvider().blockOrUnblockUser("N", 0, userName);
